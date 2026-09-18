@@ -20,3 +20,4 @@ htmlcov/
 *.tfstate.*
 playwright-report/
 test-results/
+.terraform.lock.hcl
