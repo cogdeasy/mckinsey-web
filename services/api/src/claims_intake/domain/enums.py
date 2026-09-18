@@ -1,0 +1,114 @@
+"""Domain enumerations. Values are persisted verbatim and appear in the API."""
+
+from __future__ import annotations
+
+from enum import StrEnum
+
+
+class ClaimStatus(StrEnum):
+    REGISTERED = "REGISTERED"
+    TRIAGED = "TRIAGED"
+    IN_ASSESSMENT = "IN_ASSESSMENT"
+    PENDING_APPROVAL = "PENDING_APPROVAL"
+    APPROVED = "APPROVED"
+    SETTLED = "SETTLED"
+    REJECTED = "REJECTED"
+    WITHDRAWN = "WITHDRAWN"
+    CLOSED = "CLOSED"
+
+
+class Product(StrEnum):
+    MOTOR = "MOTOR"
+    HOME = "HOME"
+    TRAVEL = "TRAVEL"
+
+
+class Peril(StrEnum):
+    COLLISION = "COLLISION"
+    THEFT = "THEFT"
+    FIRE = "FIRE"
+    FLOOD = "FLOOD"
+    ESCAPE_OF_WATER = "ESCAPE_OF_WATER"
+    STORM = "STORM"
+    ACCIDENTAL_DAMAGE = "ACCIDENTAL_DAMAGE"
+    MEDICAL = "MEDICAL"
+    CANCELLATION = "CANCELLATION"
+    LIABILITY = "LIABILITY"
+
+
+class Channel(StrEnum):
+    CONTACT_CENTRE = "CONTACT_CENTRE"
+    PORTAL = "PORTAL"
+    BROKER = "BROKER"
+    MOBILE = "MOBILE"
+
+
+class Segment(StrEnum):
+    FAST_TRACK = "FAST_TRACK"
+    STANDARD = "STANDARD"
+    COMPLEX = "COMPLEX"
+    SPECIAL_INVESTIGATION = "SPECIAL_INVESTIGATION"
+
+
+class Role(StrEnum):
+    CLAIMS_HANDLER = "claims_handler"
+    SENIOR_HANDLER = "senior_handler"
+    AUDITOR = "auditor"
+
+
+class ReserveCategory(StrEnum):
+    INDEMNITY = "INDEMNITY"
+    EXPENSE = "EXPENSE"
+
+
+class ReserveState(StrEnum):
+    PROPOSED = "PROPOSED"
+    APPROVED = "APPROVED"
+    DECLINED = "DECLINED"
+
+
+class DocumentKind(StrEnum):
+    PHOTO = "PHOTO"
+    ESTIMATE = "ESTIMATE"
+    POLICE_REPORT = "POLICE_REPORT"
+    INVOICE = "INVOICE"
+    CORRESPONDENCE = "CORRESPONDENCE"
+    OTHER = "OTHER"
+
+
+class DocumentState(StrEnum):
+    AWAITING_UPLOAD = "AWAITING_UPLOAD"
+    AVAILABLE = "AVAILABLE"
+
+
+class OutboxState(StrEnum):
+    PENDING = "PENDING"
+    SENT = "SENT"
+    DEAD_LETTER = "DEAD_LETTER"
+
+
+class PaymentState(StrEnum):
+    INSTRUCTED = "INSTRUCTED"
+    ACKNOWLEDGED = "ACKNOWLEDGED"
+    FAILED = "FAILED"
+
+
+class ReasonCode(StrEnum):
+    TRIAGE_COMPLETE = "TRIAGE_COMPLETE"
+    ASSESSMENT_STARTED = "ASSESSMENT_STARTED"
+    APPROVAL_REQUESTED = "APPROVAL_REQUESTED"
+    APPROVAL_GRANTED = "APPROVAL_GRANTED"
+    APPROVAL_DECLINED = "APPROVAL_DECLINED"
+    SETTLEMENT_ISSUED = "SETTLEMENT_ISSUED"
+    NO_COVER = "NO_COVER"
+    POLICY_LAPSED = "POLICY_LAPSED"
+    FRAUD_CONFIRMED = "FRAUD_CONFIRMED"
+    CUSTOMER_WITHDREW = "CUSTOMER_WITHDREW"
+    DUPLICATE_NOTIFICATION = "DUPLICATE_NOTIFICATION"
+    FILE_COMPLETE = "FILE_COMPLETE"
+    REOPENED = "REOPENED"
+
+
+TERMINAL_STATUSES: frozenset[ClaimStatus] = frozenset(
+    {ClaimStatus.SETTLED, ClaimStatus.REJECTED, ClaimStatus.WITHDRAWN, ClaimStatus.CLOSED}
+)

@@ -1,0 +1,71 @@
+# Triage and routing rule set (ADR 0004). Owned by Claims Technical.
+# First match wins; the default guarantees a decision (FR-022).
+version: "1.3.0"
+
+rules:
+  - id: fraud-referral
+    description: Any fraud indicator goes to special investigation regardless of value.
+    when:
+      fraud_indicator: {eq: true}
+    then: {segment: SPECIAL_INVESTIGATION, priority: 1, queue: special-investigation}
+
+  - id: duplicate-review
+    description: Suspected duplicate notifications are held for manual comparison.
+    when:
+      duplicate_suspected: {eq: true}
+    then: {segment: STANDARD, priority: 2, queue: duplicate-review}
+
+  - id: large-loss
+    description: Exposure above the complex threshold is handled by the technical desk.
+    when:
+      estimated_exposure_minor: {gt: 1000000}
+    then: {segment: COMPLEX, priority: 1, queue: technical-desk}
+
+  - id: liability-complex
+    description: Third-party liability always needs a full assessment.
+    when:
+      peril: {eq: LIABILITY}
+    then: {segment: COMPLEX, priority: 2, queue: liability}
+
+  - id: motor-glass-fast-track
+    description: Low-value motor glass and accidental damage settle without assessment.
+    when:
+      product: {eq: MOTOR}
+      peril: {in: [ACCIDENTAL_DAMAGE, COLLISION]}
+      estimated_exposure_minor: {lte: 100000}
+    then: {segment: FAST_TRACK, priority: 4, queue: motor-fast-track}
+
+  - id: travel-cancellation-fast-track
+    description: Documented travel cancellations below the desk limit are fast-tracked.
+    when:
+      product: {eq: TRAVEL}
+      peril: {eq: CANCELLATION}
+      estimated_exposure_minor: {lte: 75000}
+    then: {segment: FAST_TRACK, priority: 4, queue: travel-fast-track}
+
+  - id: home-escape-of-water
+    description: Escape of water needs a drying and strip-out assessment.
+    when:
+      product: {eq: HOME}
+      peril: {eq: ESCAPE_OF_WATER}
+    then: {segment: STANDARD, priority: 3, queue: home-standard}
+
+  - id: late-notification
+    description: Losses notified more than 30 days late are reviewed for prejudice.
+    when:
+      days_since_loss: {gt: 30}
+    then: {segment: COMPLEX, priority: 3, queue: late-notification}
+
+  - id: motor-standard
+    description: Remaining motor claims.
+    when:
+      product: {eq: MOTOR}
+    then: {segment: STANDARD, priority: 3, queue: motor-standard}
+
+  - id: home-standard
+    description: Remaining home claims.
+    when:
+      product: {eq: HOME}
+    then: {segment: STANDARD, priority: 3, queue: home-standard}
+
+default: {segment: STANDARD, priority: 3, queue: general-standard}
