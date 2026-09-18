@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: claims-intake-config
+data:
+  CLAIMS_ENVIRONMENT: base
+  CLAIMS_LOG_LEVEL: INFO
+  CLAIMS_JWT_ALGORITHM: RS256
+  CLAIMS_JWT_AUDIENCE: claims-intake-service
+  CLAIMS_S3_REGION: eu-west-2

@@ -1,0 +1,9 @@
+# Default owners for anything not matched below.
+*                       @meridian-assurance/claims-platform
+
+/services/api/          @meridian-assurance/claims-platform-backend
+/services/api/src/claims_intake/rules/  @meridian-assurance/claims-operations @meridian-assurance/claims-platform-backend
+/apps/console/          @meridian-assurance/claims-platform-frontend
+/docs/                  @meridian-assurance/claims-product @meridian-assurance/claims-platform
+/infra/                 @meridian-assurance/platform-engineering
+/.github/               @meridian-assurance/platform-engineering

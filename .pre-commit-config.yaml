@@ -1,0 +1,38 @@
+default_language_version:
+  python: python3.12
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-added-large-files
+        args: ["--maxkb=512"]
+      - id: check-merge-conflict
+      - id: check-yaml
+        exclude: ^infra/k8s/
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: detect-private-key
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.7.3
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+        files: ^services/api/
+      - id: ruff-format
+        files: ^services/api/
+
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.96.2
+    hooks:
+      - id: terraform_fmt
+
+  - repo: local
+    hooks:
+      - id: console-format
+        name: prettier (console)
+        language: system
+        files: ^apps/console/(src|e2e)/.*\.(ts|tsx|css)$
+        pass_filenames: false
+        entry: bash -c 'cd apps/console && npm run --silent format:check'

@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: claims-dev
+nameSuffix: -dev
+
+resources:
+  - ../../base
+  - externalsecret.yaml
+
+patches:
+  - path: replicas.yaml
+  - path: ingress.yaml
+
+configMapGenerator:
+  - name: claims-intake-config
+    behavior: merge
+    literals:
+      - CLAIMS_ENVIRONMENT=dev
+      - CLAIMS_LOG_LEVEL=DEBUG
+      - CLAIMS_JWT_ISSUER=https://id.dev.meridian-assurance.example/
+      - CLAIMS_DOCUMENTS_BUCKET=claims-dev-claim-documents
+
+images:
+  - name: claims-intake-api
+    newName: 000000000000.dkr.ecr.eu-west-2.amazonaws.com/claims-intake-api
+    newTag: dev
+  - name: claims-console
+    newName: 000000000000.dkr.ecr.eu-west-2.amazonaws.com/claims-console
+    newTag: dev

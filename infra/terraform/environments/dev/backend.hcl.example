@@ -1,0 +1,5 @@
+bucket         = "meridian-terraform-state-dev"
+key            = "claims-intake-service/dev/terraform.tfstate"
+region         = "eu-west-2"
+dynamodb_table = "meridian-terraform-locks"
+encrypt        = true

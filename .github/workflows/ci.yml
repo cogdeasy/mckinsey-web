@@ -1,0 +1,218 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "22"
+
+jobs:
+  api-static:
+    name: API lint and types
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: services/api/requirements-dev.txt
+      - run: pip install -r requirements-dev.txt && pip install --no-deps -e .
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: mypy
+
+  api-tests:
+    name: API tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/api
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: claims
+          POSTGRES_PASSWORD: claims
+          POSTGRES_DB: claims_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U claims"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      CLAIMS_TEST_DATABASE_URL: postgresql+psycopg://claims:claims@localhost:5432/claims_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: services/api/requirements-dev.txt
+      - run: pip install -r requirements-dev.txt && pip install --no-deps -e .
+      - run: pytest tests --cov=claims_intake --cov-report=term-missing
+
+  migrations:
+    name: Migration check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/api
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: claims
+          POSTGRES_PASSWORD: claims
+          POSTGRES_DB: claims
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U claims"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      CLAIMS_DATABASE_URL: postgresql+psycopg://claims:claims@localhost:5432/claims
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: services/api/requirements-dev.txt
+      - run: pip install -r requirements-dev.txt && pip install --no-deps -e .
+      - name: Migrations apply cleanly
+        run: alembic upgrade head
+      - name: Migrations match the models
+        run: alembic check
+      - name: Downgrade path works
+        run: alembic downgrade base
+      - name: Seed data loads
+        run: |
+          alembic upgrade head
+          python -m claims_intake.seed
+
+  openapi-drift:
+    name: OpenAPI drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: services/api/requirements-dev.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: apps/console/package-lock.json
+      - run: pip install -r requirements-dev.txt && pip install --no-deps -e .
+        working-directory: services/api
+      - run: python scripts/export_openapi.py
+        working-directory: services/api
+      - run: npm ci
+        working-directory: apps/console
+      - run: npm run api:types
+        working-directory: apps/console
+      - name: Schema and generated types are committed
+        run: git diff --exit-code -- services/api/openapi.json apps/console/src/api/schema.d.ts
+
+  console:
+    name: Console lint, types, tests and build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/console
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: apps/console/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npm run build
+
+  e2e:
+    name: Console browser tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/console
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: apps/console/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: apps/console/playwright-report
+          retention-days: 7
+
+  images:
+    name: Container images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build the API image
+        uses: docker/build-push-action@v6
+        with:
+          context: services/api
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Build the console image
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/console
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  infra:
+    name: Terraform and manifests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+      - name: Terraform format
+        run: terraform fmt -check -recursive infra/terraform
+      - name: Validate each environment
+        run: |
+          for environment in dev staging prod; do
+            terraform -chdir="infra/terraform/environments/$environment" init -backend=false
+            terraform -chdir="infra/terraform/environments/$environment" validate
+          done
+      - name: Render Kustomize overlays
+        run: |
+          for overlay in dev staging prod; do
+            kubectl kustomize "infra/k8s/overlays/$overlay" > /dev/null
+          done
