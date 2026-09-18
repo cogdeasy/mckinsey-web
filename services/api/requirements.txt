@@ -8,7 +8,7 @@ psycopg[binary]==3.2.3
 pydantic==2.9.2
 pydantic-settings==2.6.1
 PyJWT[crypto]==2.9.0
-PyYAML==6.0.2
+PyYAML==6.0.3
 SQLAlchemy==2.0.36
 uvicorn[standard]==0.32.0
 opentelemetry-api==1.28.2
