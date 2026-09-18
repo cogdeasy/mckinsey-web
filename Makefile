@@ -5,6 +5,9 @@ VENV := $(API_DIR)/.venv
 PY := $(VENV)/bin/python
 COMPOSE := docker compose
 
+# Local port overrides live in .env, the same file docker compose reads.
+-include .env
+
 export CLAIMS_TEST_DATABASE_URL ?= postgresql+psycopg://claims:claims@localhost:$(or $(POSTGRES_PORT),5432)/claims_test
 
 .DEFAULT_GOAL := help

@@ -33,5 +33,6 @@ repos:
       - id: console-format
         name: prettier (console)
         language: system
-        files: ^apps/console/src/.*\.(ts|tsx|css)$
-        entry: bash -c 'cd apps/console && npx prettier --check "$@"' --
+        files: ^apps/console/(src|e2e)/.*\.(ts|tsx|css)$
+        pass_filenames: false
+        entry: bash -c 'cd apps/console && npm run --silent format:check'
