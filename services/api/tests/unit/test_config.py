@@ -8,7 +8,10 @@ from pydantic import ValidationError
 from claims_intake.config import LOCAL_JWT_SECRET, Settings
 
 
-def test_local_environment_may_use_the_development_secret() -> None:
+def test_local_environment_may_use_the_development_secret(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("CLAIMS_JWT_SECRET", raising=False)
     settings = Settings(environment="local")
 
     assert settings.jwt_secret == LOCAL_JWT_SECRET
