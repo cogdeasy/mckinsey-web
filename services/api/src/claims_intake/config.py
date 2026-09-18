@@ -5,10 +5,12 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 DEFAULT_RULE_SET = Path(__file__).resolve().parent / "rules" / "triage.yaml"
+LOCAL_JWT_SECRET = "local-development-only"
+LOCAL_ENVIRONMENTS = frozenset({"local", "test"})
 
 
 class Settings(BaseSettings):
@@ -23,7 +25,7 @@ class Settings(BaseSettings):
     database_pool_size: int = 5
     database_max_overflow: int = 10
 
-    jwt_secret: str = "local-development-only"
+    jwt_secret: str = LOCAL_JWT_SECRET
     jwt_algorithm: str = "HS256"
     jwt_issuer: str = "https://id.meridian-assurance.example/"
     jwt_audience: str = "claims-intake-service"
@@ -44,6 +46,15 @@ class Settings(BaseSettings):
     outbox_batch_size: int = Field(default=50, ge=1, le=500)
     outbox_max_attempts: int = Field(default=5, ge=1, le=20)
     outbox_poll_seconds: float = Field(default=2.0, gt=0)
+
+    @model_validator(mode="after")
+    def _reject_shared_jwt_secret(self) -> Settings:
+        if self.environment not in LOCAL_ENVIRONMENTS and self.jwt_secret == LOCAL_JWT_SECRET:
+            raise ValueError(
+                "CLAIMS_JWT_SECRET must be set outside the "
+                f"{sorted(LOCAL_ENVIRONMENTS)} environments"
+            )
+        return self
 
 
 @lru_cache(maxsize=1)
