@@ -1,7 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
-import { ApiError, claimsApi, type ClaimDetail, type ClaimStatus } from '../api/client';
+import {
+  ApiError,
+  claimsApi,
+  type ClaimDetail,
+  type ClaimStatus,
+  type ReasonCode,
+} from '../api/client';
 import { humanise } from '../lib/format';
 
 const NEXT_STATUSES: Record<string, ClaimStatus[]> = {
@@ -16,13 +22,13 @@ const NEXT_STATUSES: Record<string, ClaimStatus[]> = {
   CLOSED: [],
 };
 
-const REASONS = [
+const REASONS: ReasonCode[] = [
   'NO_COVER',
   'POLICY_LAPSED',
   'FRAUD_CONFIRMED',
   'CUSTOMER_WITHDREW',
-  'DUPLICATE_CLAIM',
-] as const;
+  'DUPLICATE_NOTIFICATION',
+];
 
 export function TriageActions({ claim }: { claim: ClaimDetail }) {
   const queryClient = useQueryClient();
